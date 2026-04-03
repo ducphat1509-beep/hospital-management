@@ -1,45 +1,45 @@
 package com.hms.dao.impl;
 
 import com.hms.config.JpaUtil;
-import com.hms.dao.DepartmentDAO;
-import com.hms.model.entity.Department;
+import com.hms.dao.MedicineDAO;
+import com.hms.model.entity.Medicine;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 
 import java.util.List;
 
-public class DepartmentDAOImpl implements DepartmentDAO {
+public class MedicineDAOImpl implements MedicineDAO {
 
     @Override
-    public List<Department> findAll() {
+    public List<Medicine> findAll() {
         EntityManager em = JpaUtil.getEntityManager();
         try {
-            return em.createQuery("SELECT d FROM Department d", Department.class).getResultList();
+            return em.createQuery("SELECT m FROM Medicine m", Medicine.class).getResultList();
         } finally {
             em.close();
         }
     }
 
     @Override
-    public Department findById(Long id) {
+    public Medicine findById(Long id) {
         EntityManager em = JpaUtil.getEntityManager();
         try {
-            return em.find(Department.class, id);
+            return em.find(Medicine.class, id);
         } finally {
             em.close();
         }
     }
 
     @Override
-    public void save(Department department) {
+    public void save(Medicine medicine) {
         EntityManager em = JpaUtil.getEntityManager();
         EntityTransaction trans = em.getTransaction();
         try {
             trans.begin();
-            if (department.getId() == null) {
-                em.persist(department);
+            if (medicine.getId() == null) {
+                em.persist(medicine);
             } else {
-                em.merge(department);
+                em.merge(medicine);
             }
             trans.commit();
         } catch (Exception e) {
@@ -56,9 +56,9 @@ public class DepartmentDAOImpl implements DepartmentDAO {
         EntityTransaction trans = em.getTransaction();
         try {
             trans.begin();
-            Department department = em.find(Department.class, id);
-            if (department != null) {
-                em.remove(em.contains(department) ? department : em.merge(department));
+            Medicine medicine = em.find(Medicine.class, id);
+            if (medicine != null) {
+                em.remove(em.contains(medicine) ? medicine : em.merge(medicine));
             }
             trans.commit();
         } catch (Exception e) {

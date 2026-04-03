@@ -6,6 +6,8 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "patients")
@@ -49,6 +51,17 @@ public class Patient {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Setter
+    @Getter
+    @OneToMany(mappedBy = "patient", fetch = FetchType.LAZY)
+    private List<Bill> bills = new ArrayList<>();
+
+    @PrePersist // Chạy ngay trước khi lưu mới vào DB
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
 
     // --- Enum nội bộ để khớp với SQL ---
     public enum Gender {

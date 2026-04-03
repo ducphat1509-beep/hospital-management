@@ -33,6 +33,7 @@ public class DoctorManagementPanel extends JPanel {
         cbDepartment = new JComboBox<>();
         loadDepartments(); // Tải danh sách khoa vào dropdown
         formPanel.add(cbDepartment);
+        cbDepartment.setSelectedIndex(-1);
 
         add(formPanel, BorderLayout.NORTH);
 

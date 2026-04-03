@@ -1,66 +1,228 @@
 package com.hms.view;
 
-// 1. IMPORT các lớp từ các package khác
-import com.hms.controller.AppointmentController;
-import com.hms.controller.DoctorController;
-import com.hms.controller.PatientController;
 import com.hms.dao.AppointmentDAO;
+import com.hms.dao.BillDAO;
+import com.hms.dao.BillMedicineDetailDAO;
 import com.hms.dao.DoctorDAO;
+import com.hms.dao.MedicalRecordDAO;
+import com.hms.dao.MedicineDAO;
 import com.hms.dao.PatientDAO;
+import com.hms.dao.PrescriptionDAO;
 import com.hms.dao.impl.AppointmentDAOImpl;
+import com.hms.dao.impl.BillDAOImpl;
+import com.hms.dao.impl.BillMedicineDetailDAOImpl;
 import com.hms.dao.impl.DoctorDAOImpl;
+import com.hms.dao.impl.MedicalRecordDAOImpl;
+import com.hms.dao.impl.MedicineDAOImpl;
 import com.hms.dao.impl.PatientDAOImpl;
+import com.hms.dao.impl.PrescriptionDAOImpl;
 import com.hms.service.AppointmentService;
+import com.hms.service.BillMedicineDetailService;
+import com.hms.service.BillService;
 import com.hms.service.DoctorService;
+import com.hms.service.MedicalRecordService;
+import com.hms.service.MedicineService;
 import com.hms.service.PatientService;
+import com.hms.service.PrescriptionService;
 import com.hms.service.impl.AppointmentServiceImpl;
+import com.hms.service.impl.BillMedicineDetailServiceImpl;
+import com.hms.service.impl.BillServiceImpl;
 import com.hms.service.impl.DoctorServiceImpl;
+import com.hms.service.impl.MedicalRecordServiceImpl;
+import com.hms.service.impl.MedicineServiceImpl;
 import com.hms.service.impl.PatientServiceImpl;
+import com.hms.service.impl.PrescriptionServiceImpl;
+import com.hms.view.ui.HmsTheme;
+import com.hms.view.ui.RoundedPanel;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class MainFrame extends JFrame {
 
     public MainFrame() {
-        // --- PHẦN 1: CẤU HÌNH CỬA SỔ (UI) ---
         setTitle("HỆ THỐNG QUẢN LÝ BỆNH VIỆN - HMS");
-        setSize(1000, 700);
+        setSize(1200, 760);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // --- PHẦN 2: KHỞI TẠO CÁC TẦNG (BACKEND-TO-FRONTEND) ---
-        // Khởi tạo từ tầng thấp nhất (DAO) lên tầng cao nhất (Controller)
-        // 1. Tầng Patient
+        try {
+            java.net.URL iconUrl = getClass().getResource("/assets/logoHospital.png");
+            if (iconUrl != null) {
+                setIconImage(new ImageIcon(iconUrl).getImage());
+            }
+        } catch (Exception ignored) {
+        }
+
+        // --- Backend wiring (DAO -> Service) ---
         PatientDAO patientDAO = new PatientDAOImpl();
         PatientService patientService = new PatientServiceImpl(patientDAO);
-        PatientController patientController = new PatientController(patientService);
 
-        // 2. Tầng Doctor
         DoctorDAO doctorDAO = new DoctorDAOImpl();
         DoctorService doctorService = new DoctorServiceImpl(doctorDAO);
-        DoctorController doctorController = new DoctorController(doctorService);
 
-        // 3. Tầng Appointment (Cần cả 3 DAO để hoạt động)
         AppointmentDAO appointmentDAO = new AppointmentDAOImpl();
         AppointmentService appointmentService = new AppointmentServiceImpl(appointmentDAO, doctorDAO, patientDAO);
-        AppointmentController appointmentController = new AppointmentController(appointmentService, doctorService, patientService);
 
-        // --- PHẦN 3: TẠO CÁC MẢNH GHÉP GIAO DIỆN (PANELS) ---
-        // Nạp Controller vào View tương ứng
-        PatientManagementPanel patientPanel = new PatientManagementPanel(patientController);
+        MedicineDAO medicineDAO = new MedicineDAOImpl();
+        MedicineService medicineService = new MedicineServiceImpl(medicineDAO);
 
-        DoctorManagementPanel doctorPanel = new DoctorManagementPanel(doctorController);
+        MedicalRecordDAO medicalRecordDAO = new MedicalRecordDAOImpl();
+        MedicalRecordService medicalRecordService = new MedicalRecordServiceImpl(medicalRecordDAO, appointmentDAO);
 
-        AppointmentPanel appointmentPanel = new AppointmentPanel(appointmentController);
+        PrescriptionDAO prescriptionDAO = new PrescriptionDAOImpl();
+        PrescriptionService prescriptionService = new PrescriptionServiceImpl(prescriptionDAO, medicalRecordDAO);
 
-        // --- PHẦN 4: LẮP RÁP VÀO TABBED PANE ---
-        JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("Quản lý Bệnh nhân", patientPanel);
-        tabbedPane.addTab("Quản lý Bác sĩ", doctorPanel);
-        tabbedPane.addTab("Đặt lịch hẹn", appointmentPanel);
+        // Create when a dedicated PrescriptionDetail UI is added:
+        // new PrescriptionDetailServiceImpl(prescriptionDetailDAO, prescriptionDAO, medicineDAO);
 
-        // Thêm TabbedPane vào khung chính
-        this.add(tabbedPane);
+        BillDAO billDAO = new BillDAOImpl();
+        BillMedicineDetailDAO billMedicineDetailDAO = new BillMedicineDetailDAOImpl();
+        BillService billService = new BillServiceImpl(billDAO, billMedicineDetailDAO, patientDAO);
+        BillMedicineDetailService billMedicineDetailService = new BillMedicineDetailServiceImpl(
+                billDAO,
+                billMedicineDetailDAO,
+                medicineDAO,
+                medicineService,
+                billService
+        );
+
+        // --- UI shell: BorderLayout + sidebar + topbar + CardLayout content ---
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(HmsTheme.BG);
+        setContentPane(root);
+
+        JPanel sidebar = buildSidebar();
+        JPanel topbar = buildTopbar();
+
+        CardLayout cardLayout = new CardLayout();
+        JPanel content = new JPanel(cardLayout);
+        content.setOpaque(false);
+        content.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+
+        DashboardPanel dashboardPanel = new DashboardPanel(() -> cardLayout.show(content, Nav.APPOINTMENTS));
+        PatientPanel patientPanel = new PatientPanel(patientService);
+        DoctorPanel doctorPanel = new DoctorPanel(doctorService);
+        AppointmentPanel appointmentPanel = new AppointmentPanel(appointmentService, patientService, doctorService);
+        MedicinePanel medicinePanel = new MedicinePanel(medicineService);
+        PrescriptionPanel prescriptionPanel = new PrescriptionPanel(prescriptionService, medicalRecordService);
+        // PrescriptionDetail is intentionally not embedded here to keep navigation simple.
+        BillPanel billPanel = new BillPanel(billService, billMedicineDetailService, medicineService, patientService);
+
+        content.add(dashboardPanel, Nav.DASHBOARD);
+        content.add(patientPanel, Nav.PATIENTS);
+        content.add(doctorPanel, Nav.DOCTORS);
+        content.add(appointmentPanel, Nav.APPOINTMENTS);
+        content.add(medicinePanel, Nav.MEDICINES);
+        content.add(prescriptionPanel, Nav.PRESCRIPTIONS);
+        content.add(billPanel, Nav.BILLS);
+
+        JPanel contentWrap = new RoundedPanel(18, HmsTheme.CARD);
+        contentWrap.setLayout(new BorderLayout());
+        contentWrap.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        contentWrap.add(content, BorderLayout.CENTER);
+
+        root.add(sidebar, BorderLayout.WEST);
+        root.add(topbar, BorderLayout.NORTH);
+        root.add(contentWrap, BorderLayout.CENTER);
+
+        wireNavigation(sidebar, cardLayout, content);
+        cardLayout.show(content, Nav.DASHBOARD);
+    }
+
+    private static final class Nav {
+        static final String DASHBOARD = "dashboard";
+        static final String PATIENTS = "patients";
+        static final String DOCTORS = "doctors";
+        static final String APPOINTMENTS = "appointments";
+        static final String MEDICINES = "medicines";
+        static final String PRESCRIPTIONS = "prescriptions";
+        static final String BILLS = "bills";
+    }
+
+    private JPanel buildSidebar() {
+        RoundedPanel panel = new RoundedPanel(18, HmsTheme.SIDEBAR_BG);
+        panel.setPreferredSize(new Dimension(240, 10));
+        panel.setLayout(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+
+        JLabel brand = new JLabel("HMS");
+        brand.setFont(HmsTheme.fontBold(18));
+        brand.setForeground(HmsTheme.TEXT);
+
+        JPanel top = new JPanel(new BorderLayout());
+        top.setOpaque(false);
+        top.add(brand, BorderLayout.WEST);
+        panel.add(top, BorderLayout.NORTH);
+
+        JPanel nav = new JPanel();
+        nav.setOpaque(false);
+        nav.setLayout(new GridLayout(0, 1, 0, 8));
+        nav.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
+
+        nav.add(HmsTheme.navButton("Trang chủ", Nav.DASHBOARD));
+        nav.add(HmsTheme.navButton("Bệnh nhân", Nav.PATIENTS));
+        nav.add(HmsTheme.navButton("Bác sĩ", Nav.DOCTORS));
+        nav.add(HmsTheme.navButton("Lịch hẹn", Nav.APPOINTMENTS));
+        nav.add(HmsTheme.navButton("Thuốc", Nav.MEDICINES));
+        nav.add(HmsTheme.navButton("Đơn thuốc", Nav.PRESCRIPTIONS));
+        nav.add(HmsTheme.navButton("Hóa đơn", Nav.BILLS));
+
+        panel.add(nav, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel buildTopbar() {
+        RoundedPanel panel = new RoundedPanel(18, HmsTheme.TOPBAR_BG);
+        panel.setLayout(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+
+        JPanel left = new JPanel(new GridLayout(0, 1, 0, 2));
+        left.setOpaque(false);
+        JLabel hello = new JLabel("Chào mừng bạn trở lại");
+        hello.setFont(HmsTheme.fontBold(18));
+        hello.setForeground(HmsTheme.TEXT);
+        JLabel sub = new JLabel("Hospital Management System");
+        sub.setFont(HmsTheme.fontRegular(12));
+        sub.setForeground(HmsTheme.TEXT_MUTED);
+        left.add(hello);
+        left.add(sub);
+
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        right.setOpaque(false);
+        JTextField search = new JTextField(22);
+        search.setFont(HmsTheme.fontRegular(12));
+        search.setBorder(HmsTheme.roundedLineBorder(16));
+        search.setBackground(Color.WHITE);
+        search.setForeground(HmsTheme.TEXT);
+        search.setToolTipText("Search");
+        right.add(search);
+
+        JButton user = new JButton("Admin");
+        HmsTheme.stylePillButton(user);
+        right.add(user);
+
+        panel.add(left, BorderLayout.WEST);
+        panel.add(right, BorderLayout.EAST);
+        return panel;
+    }
+
+    private void wireNavigation(JPanel sidebar, CardLayout cardLayout, JPanel content) {
+        attachNavListeners(sidebar, cardLayout, content);
+    }
+
+    private void attachNavListeners(Container root, CardLayout cardLayout, JPanel content) {
+        for (Component c : root.getComponents()) {
+            if (c instanceof JButton b) {
+                Object key = b.getClientProperty("navKey");
+                if (key instanceof String navKey) {
+                    b.addActionListener(e -> cardLayout.show(content, navKey));
+                }
+            }
+            if (c instanceof Container child) {
+                attachNavListeners(child, cardLayout, content);
+            }
+        }
     }
 
     public static void main(String[] args) {
@@ -68,6 +230,7 @@ public class MainFrame extends JFrame {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
+
             e.printStackTrace();
         }
 

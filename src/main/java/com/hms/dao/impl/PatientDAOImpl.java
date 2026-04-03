@@ -37,7 +37,11 @@ public class PatientDAOImpl implements PatientDAO {
         EntityTransaction trans = em.getTransaction();
         try {
             trans.begin();
-            em.persist(patient);
+            if (patient.getId() == null) {
+                em.persist(patient); // Thêm mới nếu chưa có ID
+            } else {
+                em.merge(patient);   // Cập nhật nếu đã có ID
+            }
             trans.commit();
         } catch (Exception e) {
             if (trans.isActive()) trans.rollback();

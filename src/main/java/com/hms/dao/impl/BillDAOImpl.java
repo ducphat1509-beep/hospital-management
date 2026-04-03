@@ -1,45 +1,48 @@
 package com.hms.dao.impl;
 
 import com.hms.config.JpaUtil;
-import com.hms.dao.DepartmentDAO;
-import com.hms.model.entity.Department;
+import com.hms.dao.BillDAO;
+import com.hms.model.entity.Bill;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 
 import java.util.List;
 
-public class DepartmentDAOImpl implements DepartmentDAO {
+public class BillDAOImpl implements BillDAO {
 
     @Override
-    public List<Department> findAll() {
+    public List<Bill> findAll() {
         EntityManager em = JpaUtil.getEntityManager();
         try {
-            return em.createQuery("SELECT d FROM Department d", Department.class).getResultList();
+            return em.createQuery(
+                    "SELECT DISTINCT b FROM Bill b JOIN FETCH b.patient",
+                    Bill.class
+            ).getResultList();
         } finally {
             em.close();
         }
     }
 
     @Override
-    public Department findById(Long id) {
+    public Bill findById(Long id) {
         EntityManager em = JpaUtil.getEntityManager();
         try {
-            return em.find(Department.class, id);
+            return em.find(Bill.class, id);
         } finally {
             em.close();
         }
     }
 
     @Override
-    public void save(Department department) {
+    public void save(Bill bill) {
         EntityManager em = JpaUtil.getEntityManager();
         EntityTransaction trans = em.getTransaction();
         try {
             trans.begin();
-            if (department.getId() == null) {
-                em.persist(department);
+            if (bill.getId() == null) {
+                em.persist(bill);
             } else {
-                em.merge(department);
+                em.merge(bill);
             }
             trans.commit();
         } catch (Exception e) {
@@ -56,9 +59,9 @@ public class DepartmentDAOImpl implements DepartmentDAO {
         EntityTransaction trans = em.getTransaction();
         try {
             trans.begin();
-            Department department = em.find(Department.class, id);
-            if (department != null) {
-                em.remove(em.contains(department) ? department : em.merge(department));
+            Bill bill = em.find(Bill.class, id);
+            if (bill != null) {
+                em.remove(em.contains(bill) ? bill : em.merge(bill));
             }
             trans.commit();
         } catch (Exception e) {

@@ -33,6 +33,9 @@ public class Appointment {
         PENDING, DONE, CANCELLED
     }
 
+    @OneToOne(mappedBy = "appointment", fetch = FetchType.LAZY)
+    private MedicalRecord medicalRecord;
+
     // --- Getter và Setter ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -44,4 +47,6 @@ public class Appointment {
     public void setAppointmentTime(LocalDateTime appointmentTime) { this.appointmentTime = appointmentTime; }
     public AppointmentStatus getStatus() { return status; }
     public void setStatus(AppointmentStatus status) { this.status = status; }
+    public MedicalRecord getMedicalRecord() { return medicalRecord; }
+    public void setMedicalRecord(MedicalRecord medicalRecord) { this.medicalRecord = medicalRecord; }
 }

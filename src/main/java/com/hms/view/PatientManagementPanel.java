@@ -46,13 +46,14 @@ public class PatientManagementPanel extends JPanel {
         formPanel.add(txtDob);
 
         formPanel.add(new JLabel("Giới tính:"));
-        cbGender = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+        cbGender = new JComboBox<>(new String[]{"MALE", "FEMALE", "OTHER"});
         formPanel.add(cbGender);
+        cbGender.setSelectedIndex(-1);
 
         add(formPanel, BorderLayout.NORTH);
 
         // 2. Phần Bảng hiển thị (Phía Trung tâm - CENTER)
-        tableModel = new DefaultTableModel(new Object[]{"ID", "Họ Tên", "SĐT", "Ngày Sinh"}, 0);
+        tableModel = new DefaultTableModel(new Object[]{"ID", "Họ Tên", "SĐT", "Ngày Sinh", "gender"}, 0);
         table = new JTable(tableModel);
         // JScrollPane giúp bảng có thanh cuộn khi dữ liệu nhiều
         add(new JScrollPane(table), BorderLayout.CENTER);
@@ -96,17 +97,26 @@ public class PatientManagementPanel extends JPanel {
             Patient p = new Patient();
             p.setFullName(txtName.getText());
             p.setPhone(txtPhone.getText());
-
+            p.setGender(Patient.Gender.valueOf(cbGender.getSelectedItem().toString()));
             // XỬ LÝ NGÀY SINH Ở ĐÂY
             String dobString = txtDob.getText().trim();
             if (!dobString.isEmpty()) {
                 try {
-                    // Mặc định LocalDate.parse hiểu định dạng yyyy-MM-dd (vd: 1999-12-31)
-                    LocalDate date = LocalDate.parse(dobString);
-                    p.setDob(date);
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(this, "Ngày sinh sai định dạng! Vui lòng nhập: yyyy-MM-dd");
-                    return; // Dừng hàm, không lưu nữa
+                    p.setFullName(txtName.getText());
+                    p.setPhone(txtPhone.getText());
+                    p.setGender(Patient.Gender.valueOf(cbGender.getSelectedItem().toString())); // Thêm Gender
+
+                    // Xử lý Ngày sinh: Chuyển String yyyy-MM-dd sang LocalDate
+                    String dobStr = txtDob.getText();
+                    if (!dobStr.isEmpty()) {
+                        p.setDob(java.time.LocalDate.parse(dobStr));
+                    }
+
+                    patientController.addPatient(p);
+                    JOptionPane.showMessageDialog(this, "Thêm thành công!");
+                    refreshTable();
+                } catch (java.time.format.DateTimeParseException e) {
+                    JOptionPane.showMessageDialog(this, "Ngày sinh sai định dạng! (Dùng yyyy-MM-dd)");
                 }
             } else {
                 p.setDob(null);
@@ -212,7 +222,8 @@ public class PatientManagementPanel extends JPanel {
                     p.getId(),
                     p.getFullName(),
                     p.getPhone(),
-                    p.getDob()
+                    p.getDob(),
+                    p.getGender()
             });
         }
     }

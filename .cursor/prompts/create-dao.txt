@@ -1,0 +1,5 @@
+Create DAO based on DoctorDAO:
+
+- Use Hibernate
+- CRUD methods
+- No business logic
