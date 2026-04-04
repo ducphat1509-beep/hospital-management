@@ -29,25 +29,56 @@ public class DashboardPanel extends JPanel {
         hero.setLayout(new BorderLayout(16, 16));
         hero.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
 
-        JPanel left = new JPanel(new GridLayout(0, 1, 0, 6));
+        JPanel left = new JPanel(new GridLayout(3, 2, 6, 6));
         left.setOpaque(false);
 
         JLabel title = new JLabel("Cần tìm bác sĩ? Kết nối trực tuyến với chúng tôi!");
         title.setFont(HmsTheme.fontBold(18));
         title.setForeground(Color.WHITE);
-        JLabel sub = new JLabel("Get your first medical service at your home.");
+        title.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JLabel sub = new JLabel("GET YOUR FIRST MEDICAL SERVICE AT YOUR HOME.");
         sub.setFont(HmsTheme.fontRegular(12));
         sub.setForeground(new Color(0xD6E6F2));
+        sub.setHorizontalAlignment(SwingConstants.CENTER);
 
         JButton cta = new JButton("Đặt lịch khám");
         HmsTheme.styleSecondaryButton(cta);
+        cta.setHorizontalAlignment(SwingConstants.CENTER);
         cta.addActionListener(e -> {
             if (onCta != null) onCta.run();
         });
 
+        JLabel timeLabel1 = new JLabel();
+        timeLabel1.setFont(HmsTheme.fontBold(18));
+        timeLabel1.setForeground(new Color(0xD6E6F2));
+        timeLabel1.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JLabel timeLabel2 = new JLabel();
+        timeLabel2.setFont(HmsTheme.fontBold(18));
+        timeLabel2.setForeground(new Color(0xD6E6F2));
+        timeLabel2.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // update time mỗi giây
+        Timer timer = new Timer(1000, e -> {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+            java.time.format.DateTimeFormatter formatter1 =
+                    java.time.format.DateTimeFormatter.ofPattern("'         Date:' dd/MM/yyyy");
+            java.time.format.DateTimeFormatter formatter2 =
+                    java.time.format.DateTimeFormatter.ofPattern("'         Time:' HH:mm:ss");
+
+            timeLabel1.setText(now.format(formatter1));
+            timeLabel1.setFont(new Font("Bauhaus 93", Font.BOLD, 24));
+            timeLabel2.setText(now.format(formatter2));
+            timeLabel2.setFont(new Font("Bauhaus 93", Font.BOLD, 24));
+        });
+        timer.start();
+
         left.add(title);
+        left.add(timeLabel1);
         left.add(sub);
-        left.add(new JLabel());
+        left.add(timeLabel2);
         left.add(cta);
 
         hero.add(left, BorderLayout.WEST);
@@ -60,10 +91,10 @@ public class DashboardPanel extends JPanel {
 
         JPanel stats = new JPanel(new GridLayout(1, 4, 12, 12));
         stats.setOpaque(false);
-//        stats.add(statCard("34", "Tổng lượt đặt"));
-//        stats.add(statCard("21", "Đặt thành công"));
-//        stats.add(statCard("4", "Đặt bị hủy"));
-//        stats.add(statCard("120€", "Số tiền đã trả"));
+        stats.add(statCard("34", "Tổng lượt đặt"));
+        stats.add(statCard("21", "Đặt thành công"));
+        stats.add(statCard("4", "Đặt bị hủy"));
+        stats.add(statCard("120€", "Số tiền đã trả"));
 
         body.add(stats, BorderLayout.NORTH);
 
