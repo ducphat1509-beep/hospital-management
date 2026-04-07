@@ -9,5 +9,6 @@ public interface AppointmentService {
     Appointment bookAppointment(Long patientId, Long doctorId, LocalDateTime time);
 
     List<Appointment> getAppointmentsByDoctor(Long doctorId);
+    void updateStatus(Long appointmentId, Appointment.AppointmentStatus status);
     void cancelAppointment(Long appointmentId);
 }

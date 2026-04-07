@@ -1,5 +1,6 @@
 package com.hms.view;
 
+import com.hms.model.dto.UserSessionDTO;
 import com.hms.model.entity.Bill;
 import com.hms.model.entity.BillMedicineDetail;
 import com.hms.model.entity.Medicine;
@@ -15,6 +16,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import com.hms.model.entity.Account;
+import com.hms.model.enumtype.UserRole;
 
 public class BillPanel extends JPanel {
 
@@ -22,6 +25,7 @@ public class BillPanel extends JPanel {
     private final BillMedicineDetailService billMedicineDetailService;
     private final MedicineService medicineService;
     private final PatientService patientService;
+    private final UserSessionDTO session;
 
     private final JComboBox<Patient> cbPatient = new JComboBox<>();
     private final JComboBox<Medicine> cbMedicine = new JComboBox<>();
@@ -41,12 +45,14 @@ public class BillPanel extends JPanel {
             BillService billService,
             BillMedicineDetailService billMedicineDetailService,
             MedicineService medicineService,
-            PatientService patientService
+            PatientService patientService,
+            UserSessionDTO session
     ) {
         this.billService = billService;
         this.billMedicineDetailService = billMedicineDetailService;
         this.medicineService = medicineService;
         this.patientService = patientService;
+        this.session = session;
 
         setOpaque(false);
         setLayout(new BorderLayout(16, 16));
@@ -142,6 +148,17 @@ public class BillPanel extends JPanel {
 
         card.add(h, BorderLayout.NORTH);
         card.add(new JScrollPane(billTable), BorderLayout.CENTER);
+        
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setOpaque(false);
+        if (session.getRole() == UserRole.RECEPTIONIST || session.getRole() == UserRole.ADMIN) {
+            JButton btnPaid = new JButton("Đã thanh toán (PAID)");
+            HmsTheme.styleSecondaryButton(btnPaid);
+            btnPaid.addActionListener(e -> updateBillStatus(Bill.BillStatus.PAID));
+            actionPanel.add(btnPaid);
+            card.add(actionPanel, BorderLayout.SOUTH);
+        }
+        
         return card;
     }
 
@@ -231,12 +248,27 @@ public class BillPanel extends JPanel {
     private void onRecalc() {
         Long billId = selectedBillId();
         if (billId == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 hóa đơn.");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 hóa trường.");
             return;
         }
         try {
             billService.calculateTotalAmount(billId);
             refreshBills();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
+        }
+    }
+
+    private void updateBillStatus(Bill.BillStatus status) {
+        Long billId = selectedBillId();
+        if (billId == null) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 hóa đơn để cập nhật!");
+            return;
+        }
+        try {
+            billService.updateBillStatus(billId, status);
+            refreshBills();
+            JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
         }

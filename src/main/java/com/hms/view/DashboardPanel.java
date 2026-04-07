@@ -10,12 +10,10 @@ import java.awt.*;
 public class DashboardPanel extends JPanel {
 
     private final Runnable onCta;
+    private final com.hms.service.AppointmentService appointmentService;
 
-    public DashboardPanel() {
-        this(null);
-    }
-
-    public DashboardPanel(Runnable onCta) {
+    public DashboardPanel(com.hms.service.AppointmentService appointmentService, Runnable onCta) {
+        this.appointmentService = appointmentService;
         this.onCta = onCta;
         setOpaque(false);
         setLayout(new BorderLayout(16, 16));
@@ -42,7 +40,7 @@ public class DashboardPanel extends JPanel {
         sub.setForeground(new Color(0xD6E6F2));
         sub.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JButton cta = new JButton("Đặt lịch khám");
+        JButton cta = new JButton("Đặt lịch tái khám");
         HmsTheme.styleSecondaryButton(cta);
         cta.setHorizontalAlignment(SwingConstants.CENTER);
         cta.addActionListener(e -> {
@@ -89,12 +87,37 @@ public class DashboardPanel extends JPanel {
         JPanel body = new JPanel(new BorderLayout(16, 16));
         body.setOpaque(false);
 
+        java.util.List<com.hms.model.entity.Appointment> allAppointments = appointmentService.getAppointmentsByDoctor(null);
+        int total = 0;
+        int confirmed = 0;
+        int canceled = 0;
+        com.hms.model.entity.Appointment nextAppointment = null;
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        if (allAppointments != null) {
+            total = allAppointments.size();
+            for (com.hms.model.entity.Appointment a : allAppointments) {
+                if (a.getStatus() == com.hms.model.entity.Appointment.AppointmentStatus.CONFIRMED) {
+                    confirmed++;
+                    if (a.getAppointmentTime() != null && a.getAppointmentTime().isAfter(now)) {
+                        if (nextAppointment == null || a.getAppointmentTime().isBefore(nextAppointment.getAppointmentTime())) {
+                            nextAppointment = a;
+                        }
+                    }
+                } else if (a.getStatus() == com.hms.model.entity.Appointment.AppointmentStatus.CANCELLED) {
+                    canceled++;
+                }
+            }
+        }
+
+        String nextIdStr = nextAppointment != null ? "ID: " + nextAppointment.getId() : "N/A";
+
         JPanel stats = new JPanel(new GridLayout(1, 4, 12, 12));
         stats.setOpaque(false);
-        stats.add(statCard("34", "Tổng lượt đặt"));
-        stats.add(statCard("21", "Đặt thành công"));
-        stats.add(statCard("4", "Đặt bị hủy"));
-        stats.add(statCard("120€", "Số tiền đã trả"));
+        stats.add(statCard(String.valueOf(total), "Tổng lượt đặt"));
+        stats.add(statCard(String.valueOf(confirmed), "Đã xác nhận"));
+        stats.add(statCard(String.valueOf(canceled), "Đã hủy"));
+        stats.add(statCard(nextIdStr, "Lịch hẹn gần nhất"));
 
         body.add(stats, BorderLayout.NORTH);
 
@@ -108,12 +131,24 @@ public class DashboardPanel extends JPanel {
         tableCard.add(heading, BorderLayout.NORTH);
 
         DefaultTableModel model = new DefaultTableModel(
-                new Object[]{"Bác sĩ", "Chuyên khoa", "Date & Time", "Trạng thái"}, 0
+                new Object[]{"Bác sĩ", "Chuyên khoa", "Bệnh nhân", "Thời gian khám"}, 0
         );
         JTable table = new JTable(model);
         HmsTheme.styleTable(table);
-        model.addRow(new Object[]{"Dr. Rita Ora", "Dermatologist", "Apr 4, 2023 14:00", "PENDING"});
-        model.addRow(new Object[]{"Dr. Adam Sol", "Psychologist", "Apr 11, 2023 16:30", "DONE"});
+
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        if (allAppointments != null) {
+            allAppointments.stream()
+                .filter(a -> a.getStatus() == com.hms.model.entity.Appointment.AppointmentStatus.CONFIRMED && a.getAppointmentTime() != null && a.getAppointmentTime().isAfter(now))
+                .sorted(java.util.Comparator.comparing(com.hms.model.entity.Appointment::getAppointmentTime))
+                .forEach(a -> {
+                    String doctorName = a.getDoctor() != null ? a.getDoctor().getFullName() : "";
+                    String department = (a.getDoctor() != null && a.getDoctor().getDepartment() != null) ? a.getDoctor().getDepartment().getName() : "";
+                    String patientName = a.getPatient() != null ? a.getPatient().getFullName() : "";
+                    String time = a.getAppointmentTime().format(formatter);
+                    model.addRow(new Object[]{doctorName, department, patientName, time});
+                });
+        }
 
         tableCard.add(new JScrollPane(table), BorderLayout.CENTER);
 

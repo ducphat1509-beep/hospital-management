@@ -60,14 +60,25 @@ public class AppointmentServiceImpl implements AppointmentService {
         try {
             if (doctorId == null) {
                 // Nếu không chọn bác sĩ nào, lấy tất cả
-                return em.createQuery("SELECT a FROM Appointment a JOIN FETCH a.patient JOIN FETCH a.doctor", Appointment.class).getResultList();
+                return em.createQuery("SELECT a FROM Appointment a JOIN FETCH a.patient JOIN FETCH a.doctor ORDER BY a.status ASC, a.appointmentTime ASC", Appointment.class).getResultList();
             }
             // Lọc theo doctorId
-            return em.createQuery("SELECT a FROM Appointment a JOIN FETCH a.patient JOIN FETCH a.doctor WHERE a.doctor.id = :dId", Appointment.class)
+            return em.createQuery("SELECT a FROM Appointment a JOIN FETCH a.patient JOIN FETCH a.doctor WHERE a.doctor.id = :dId ORDER BY a.status ASC, a.appointmentTime ASC", Appointment.class)
                     .setParameter("dId", doctorId)
                     .getResultList();
         } finally {
             em.close();
+        }
+    }
+
+    @Override
+    public void updateStatus(Long appointmentId, Appointment.AppointmentStatus status) {
+        Appointment appointment = appointmentDAO.findById(appointmentId);
+        if (appointment != null) {
+            appointment.setStatus(status);
+            appointmentDAO.save(appointment);
+        } else {
+            throw new RuntimeException("Không tìm thấy lịch hẹn với ID: " + appointmentId);
         }
     }
 

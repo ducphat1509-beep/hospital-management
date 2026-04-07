@@ -1,11 +1,16 @@
 package com.hms.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "medicines")
 public class Medicine {
@@ -17,6 +22,11 @@ public class Medicine {
 
     @Column(name = "name", nullable = false)
     private String name;
+
+    @Override
+    public String toString() {
+        return this.name;
+    }
 
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
@@ -48,67 +58,4 @@ public class Medicine {
         updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
-    public Integer getStockQuantity() {
-        return stockQuantity;
-    }
-
-    public void setStockQuantity(Integer stockQuantity) {
-        this.stockQuantity = stockQuantity;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public List<PrescriptionDetail> getPrescriptionDetails() {
-        return prescriptionDetails;
-    }
-
-    public void setPrescriptionDetails(List<PrescriptionDetail> prescriptionDetails) {
-        this.prescriptionDetails = prescriptionDetails;
-    }
-
-    public List<BillMedicineDetail> getBillMedicineDetails() {
-        return billMedicineDetails;
-    }
-
-    public void setBillMedicineDetails(List<BillMedicineDetail> billMedicineDetails) {
-        this.billMedicineDetails = billMedicineDetails;
-    }
 }

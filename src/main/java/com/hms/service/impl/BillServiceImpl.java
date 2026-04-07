@@ -89,4 +89,13 @@ public class BillServiceImpl implements BillService {
         billDAO.save(bill);
         return total;
     }
+
+    @Override
+    public void updateBillStatus(Long billId, Bill.BillStatus status) {
+        Bill bill = getBillById(billId);
+        if (bill != null) {
+            bill.setStatus(status);
+            billDAO.save(bill);
+        }
+    }
 }

@@ -25,8 +25,7 @@ public class Doctor {
     }
 
     // (1) ĐỊNH NGHĨA MỐI QUAN HỆ: Nhiều bác sĩ - Một khoa
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "department_id") // Tên cột khóa ngoại trong bảng SQL
     private Department department;
-
 }

@@ -37,6 +37,17 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
     @Override
+    public void updateDoctor(Doctor doctor) {
+        if (doctor.getFullName() == null || doctor.getFullName().trim().isEmpty()) {
+            throw new RuntimeException("Tên bác sĩ không được để trống!");
+        }
+        if (doctor.getId() == null) {
+            throw new RuntimeException("ID bác sĩ không hợp lệ!");
+        }
+        doctorDAO.save(doctor);
+    }
+
+    @Override
     public void deleteDoctor(Long id) {
         // Kiểm tra xem bác sĩ có tồn tại trước khi xóa không
         Doctor doctor = doctorDAO.findById(id);

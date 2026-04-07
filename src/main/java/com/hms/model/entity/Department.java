@@ -1,8 +1,13 @@
 package com.hms.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 @Entity // (1) Khai báo với Hibernate: Class này là một thực thể CSDL
 @Table(name = "departments") // (2) Ánh xạ chính xác với tên bảng trong MySQL
 public class Department {
@@ -25,12 +30,4 @@ public class Department {
     // --- Getter và Setter ---
     // Vì các biến trên là private (để bảo mật), ta cần các hàm public để lấy và gán giá trị
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

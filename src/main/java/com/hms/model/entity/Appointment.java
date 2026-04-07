@@ -1,12 +1,18 @@
 package com.hms.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "appointments")
 public class Appointment {
 
+    // --- Getter và Setter ---
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "appointment_id")
@@ -30,23 +36,10 @@ public class Appointment {
     private AppointmentStatus status = AppointmentStatus.PENDING;
 
     public enum AppointmentStatus {
-        PENDING, DONE, CANCELLED
+        PENDING, CONFIRMED, DONE, CANCELLED
     }
 
     @OneToOne(mappedBy = "appointment", fetch = FetchType.LAZY)
     private MedicalRecord medicalRecord;
 
-    // --- Getter và Setter ---
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Patient getPatient() { return patient; }
-    public void setPatient(Patient patient) { this.patient = patient; }
-    public Doctor getDoctor() { return doctor; }
-    public void setDoctor(Doctor doctor) { this.doctor = doctor; }
-    public LocalDateTime getAppointmentTime() { return appointmentTime; }
-    public void setAppointmentTime(LocalDateTime appointmentTime) { this.appointmentTime = appointmentTime; }
-    public AppointmentStatus getStatus() { return status; }
-    public void setStatus(AppointmentStatus status) { this.status = status; }
-    public MedicalRecord getMedicalRecord() { return medicalRecord; }
-    public void setMedicalRecord(MedicalRecord medicalRecord) { this.medicalRecord = medicalRecord; }
 }

@@ -16,6 +16,9 @@ import com.hms.dao.impl.MedicalRecordDAOImpl;
 import com.hms.dao.impl.MedicineDAOImpl;
 import com.hms.dao.impl.PatientDAOImpl;
 import com.hms.dao.impl.PrescriptionDAOImpl;
+import com.hms.model.dto.UserSessionDTO;
+import com.hms.model.entity.Account;
+import com.hms.model.enumtype.UserRole;
 import com.hms.service.AppointmentService;
 import com.hms.service.BillMedicineDetailService;
 import com.hms.service.BillService;
@@ -39,8 +42,13 @@ import javax.swing.*;
 import java.awt.*;
 
 public class MainFrame extends JFrame {
+    private UserSessionDTO currentUser; // Lưu tài khoản hiện tại
 
-    public MainFrame() {
+    public MainFrame(UserSessionDTO session) {
+        this.currentUser = session;
+        // Gọi hàm phân quyền sau khi các UI component đã được khởi tạo
+
+
         setTitle("HỆ THỐNG QUẢN LÝ BỆNH VIỆN - HMS");
         setSize(1200, 760);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -73,8 +81,8 @@ public class MainFrame extends JFrame {
         PrescriptionDAO prescriptionDAO = new PrescriptionDAOImpl();
         PrescriptionService prescriptionService = new PrescriptionServiceImpl(prescriptionDAO, medicalRecordDAO);
 
-        // Create when a dedicated PrescriptionDetail UI is added:
-        // new PrescriptionDetailServiceImpl(prescriptionDetailDAO, prescriptionDAO, medicineDAO);
+        com.hms.dao.PrescriptionDetailDAO prescriptionDetailDAO = new com.hms.dao.impl.PrescriptionDetailDAOImpl();
+        com.hms.service.PrescriptionDetailService prescriptionDetailService = new com.hms.service.impl.PrescriptionDetailServiceImpl(prescriptionDetailDAO, prescriptionDAO, medicineDAO);
 
         BillDAO billDAO = new BillDAOImpl();
         BillMedicineDetailDAO billMedicineDetailDAO = new BillMedicineDetailDAOImpl();
@@ -100,14 +108,13 @@ public class MainFrame extends JFrame {
         content.setOpaque(false);
         content.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
-        DashboardPanel dashboardPanel = new DashboardPanel(() -> cardLayout.show(content, Nav.APPOINTMENTS));
+        DashboardPanel dashboardPanel = new DashboardPanel(appointmentService, () -> cardLayout.show(content, Nav.APPOINTMENTS));
         PatientPanel patientPanel = new PatientPanel(patientService);
         DoctorPanel doctorPanel = new DoctorPanel(doctorService);
-        AppointmentPanel appointmentPanel = new AppointmentPanel(appointmentService, patientService, doctorService);
+        AppointmentPanel appointmentPanel = new AppointmentPanel(appointmentService, patientService, doctorService, currentUser);
         MedicinePanel medicinePanel = new MedicinePanel(medicineService);
-        PrescriptionPanel prescriptionPanel = new PrescriptionPanel(prescriptionService, medicalRecordService);
-        // PrescriptionDetail is intentionally not embedded here to keep navigation simple.
-        BillPanel billPanel = new BillPanel(billService, billMedicineDetailService, medicineService, patientService);
+        PrescriptionPanel prescriptionPanel = new PrescriptionPanel(appointmentService, medicalRecordService, prescriptionService, medicineService, prescriptionDetailService);
+        BillPanel billPanel = new BillPanel(billService, billMedicineDetailService, medicineService, patientService, currentUser);
 
         content.add(dashboardPanel, Nav.DASHBOARD);
         content.add(patientPanel, Nav.PATIENTS);
@@ -158,15 +165,28 @@ public class MainFrame extends JFrame {
         JPanel nav = new JPanel();
         nav.setOpaque(false);
         nav.setLayout(new GridLayout(0, 1, 0, 8));
-        nav.setBorder(BorderFactory.createEmptyBorder(16, 0, 0, 0));
 
+        // Những quyền cơ bản ai cũng có
         nav.add(HmsTheme.navButton("Trang chủ", Nav.DASHBOARD));
-        nav.add(HmsTheme.navButton("Bệnh nhân", Nav.PATIENTS));
-        nav.add(HmsTheme.navButton("Bác sĩ", Nav.DOCTORS));
         nav.add(HmsTheme.navButton("Lịch hẹn", Nav.APPOINTMENTS));
-        nav.add(HmsTheme.navButton("Thuốc", Nav.MEDICINES));
-        nav.add(HmsTheme.navButton("Đơn thuốc", Nav.PRESCRIPTIONS));
-        nav.add(HmsTheme.navButton("Hóa đơn", Nav.BILLS));
+
+        // PHÂN QUYỀN TẠI ĐÂY
+        UserRole role = currentUser.getRole();
+
+        if (role == UserRole.ADMIN || role == UserRole.RECEPTIONIST) {
+            nav.add(HmsTheme.navButton("Bệnh nhân", Nav.PATIENTS));
+        }
+
+        if (role == UserRole.ADMIN || role == UserRole.DOCTOR) {
+            nav.add(HmsTheme.navButton("Đơn thuốc", Nav.PRESCRIPTIONS));
+            nav.add(HmsTheme.navButton("Hóa đơn", Nav.BILLS));
+
+        }
+
+        if (role == UserRole.ADMIN) {
+            nav.add(HmsTheme.navButton("Bác sĩ", Nav.DOCTORS));
+            nav.add(HmsTheme.navButton("Thuốc", Nav.MEDICINES));
+        }
 
         panel.add(nav, BorderLayout.CENTER);
         return panel;
@@ -179,7 +199,9 @@ public class MainFrame extends JFrame {
 
         JPanel left = new JPanel(new GridLayout(0, 1, 0, 2));
         left.setOpaque(false);
-        JLabel hello = new JLabel("Chào mừng bạn trở lại");
+
+        String name = currentUser.getDisplayName() != null ? currentUser.getDisplayName() : currentUser.getUsername();
+        JLabel hello = new JLabel("Chào mừng bạn trở lại " + name);
         hello.setFont(HmsTheme.fontBold(18));
         hello.setForeground(HmsTheme.TEXT);
         JLabel sub = new JLabel("Hospital Management System");
@@ -190,17 +212,17 @@ public class MainFrame extends JFrame {
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         right.setOpaque(false);
-        JTextField search = new JTextField(22);
-        search.setFont(HmsTheme.fontRegular(12));
-        search.setBorder(HmsTheme.roundedLineBorder(16));
-        search.setBackground(Color.WHITE);
-        search.setForeground(HmsTheme.TEXT);
-        search.setToolTipText("Search");
-        right.add(search);
+//        JTextField search = new JTextField(22);
+//        search.setFont(HmsTheme.fontRegular(12));
+//        search.setBorder(HmsTheme.roundedLineBorder(16));
+//        search.setBackground(Color.WHITE);
+//        search.setForeground(HmsTheme.TEXT);
+//        search.setToolTipText("Search");
+//        right.add(search);
 
-        JButton user = new JButton("Admin");
-        HmsTheme.stylePillButton(user);
-        right.add(user);
+        JButton userBtn = new JButton(currentUser.getRole().toString());
+        HmsTheme.stylePillButton(userBtn);
+        right.add(userBtn);
 
         panel.add(left, BorderLayout.WEST);
         panel.add(right, BorderLayout.EAST);
@@ -236,7 +258,12 @@ public class MainFrame extends JFrame {
 
         // Chạy ứng dụng
         SwingUtilities.invokeLater(() -> {
-            new MainFrame().setVisible(true);
+            // Khởi tạo các thành phần cần thiết
+            com.hms.dao.AccountDAO accountDAO = new com.hms.dao.impl.AccountDAOImpl();
+            com.hms.service.AuthService authService = new com.hms.service.impl.AuthServiceImpl(accountDAO);
+
+            // Hiện màn hình login trước
+            new LoginFrame(authService).setVisible(true);
         });
     }
 }

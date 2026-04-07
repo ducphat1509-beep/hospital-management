@@ -9,15 +9,17 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import com.hms.model.entity.Department;
 
 public class DoctorPanel extends JPanel {
 
     private final DoctorService doctorService;
 
     private final JTextField txtName = new JTextField();
+    private final JComboBox<Department> cbDepartment = new JComboBox<>();
 
     private final DefaultTableModel tableModel = new DefaultTableModel(
-            new Object[]{"ID", "Họ tên"}, 0
+            new Object[]{"ID", "Họ tên", "Khoa"}, 0
     );
     private final JTable table = new JTable(tableModel);
 
@@ -61,19 +63,29 @@ public class DoctorPanel extends JPanel {
         JPanel form = new JPanel(new GridLayout(1, 2, 10, 10));
         form.setOpaque(false);
         form.add(labeled("Họ tên", txtName));
-        form.add(new JLabel());
+        
+        List<Department> depts = new com.hms.dao.impl.DepartmentDAOImpl().findAll();
+        for (Department d : depts) {
+            cbDepartment.addItem(d);
+        }
+        cbDepartment.setSelectedIndex(-1);
+        form.add(labeled("Khoa", cbDepartment));
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actions.setOpaque(false);
         JButton add = new JButton("Thêm");
+        JButton update = new JButton("Sửa");
         JButton delete = new JButton("Xóa");
         HmsTheme.styleSecondaryButton(add);
+        HmsTheme.styleSecondaryButton(update);
         HmsTheme.styleSecondaryButton(delete);
 
         add.addActionListener(e -> onAdd());
+        update.addActionListener(e -> onUpdate());
         delete.addActionListener(e -> onDelete());
 
         actions.add(add);
+        actions.add(update);
         actions.add(delete);
 
         card.add(form, BorderLayout.CENTER);
@@ -103,9 +115,36 @@ public class DoctorPanel extends JPanel {
         try {
             Doctor d = new Doctor();
             d.setFullName(txtName.getText());
+            if (cbDepartment.getSelectedItem() != null) {
+                d.setDepartment((Department) cbDepartment.getSelectedItem());
+            }
             doctorService.createDoctor(d);
             refreshTable();
             clearForm();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
+        }
+    }
+
+    private void onUpdate() {
+        int row = table.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 bác sĩ để sửa.");
+            return;
+        }
+        try {
+            Long id = Long.parseLong(tableModel.getValueAt(row, 0).toString());
+            Doctor d = doctorService.getDoctorById(id);
+            d.setFullName(txtName.getText());
+            if (cbDepartment.getSelectedItem() != null) {
+                d.setDepartment((Department) cbDepartment.getSelectedItem());
+            } else {
+                d.setDepartment(null);
+            }
+            doctorService.updateDoctor(d);
+            refreshTable();
+            clearForm();
+            JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
         }
@@ -134,7 +173,11 @@ public class DoctorPanel extends JPanel {
         List<Doctor> list = doctorService.getAllDoctors();
         if (list == null) return;
         for (Doctor d : list) {
-            tableModel.addRow(new Object[]{d.getId(), d.getFullName()});
+            String deptName = "N/A";
+            if (d.getDepartment() != null) {
+                deptName = d.getDepartment().getName();
+            }
+            tableModel.addRow(new Object[]{d.getId(), d.getFullName(), deptName});
         }
     }
 
@@ -142,10 +185,28 @@ public class DoctorPanel extends JPanel {
         int row = table.getSelectedRow();
         if (row < 0) return;
         txtName.setText(String.valueOf(tableModel.getValueAt(row, 1)));
+        
+        Long doctorId = Long.parseLong(tableModel.getValueAt(row, 0).toString());
+        try {
+             Doctor d = doctorService.getDoctorById(doctorId);
+             if (d.getDepartment() != null) {
+                 for (int i = 0; i < cbDepartment.getItemCount(); i++) {
+                     if (cbDepartment.getItemAt(i).getId().equals(d.getDepartment().getId())) {
+                         cbDepartment.setSelectedIndex(i);
+                         break;
+                     }
+                 }
+             } else {
+                 cbDepartment.setSelectedIndex(-1);
+             }
+        } catch (Exception ex) {
+             ex.printStackTrace();
+        }
     }
 
     private void clearForm() {
         txtName.setText("");
+        cbDepartment.setSelectedIndex(-1);
         table.clearSelection();
     }
 

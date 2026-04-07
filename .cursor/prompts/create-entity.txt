@@ -1,5 +1,0 @@
-Create Hibernate Entity:
-
-- Follow existing entities
-- Map relationships correctly
-- Use schema.sql and domain-context.md

@@ -1,5 +1,6 @@
 package com.hms.view;
 
+import com.hms.model.dto.UserSessionDTO;
 import com.hms.model.entity.Appointment;
 import com.hms.model.entity.Doctor;
 import com.hms.model.entity.Patient;
@@ -14,11 +15,14 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.hms.model.entity.Account;
+import com.hms.model.enumtype.UserRole;
 
 public class AppointmentPanel extends JPanel {
     private final AppointmentService appointmentService;
     private final PatientService patientService;
     private final DoctorService doctorService;
+    private final UserSessionDTO session;
 
     // Components cho phần đặt lịch
     private JComboBox<Patient> cbPatient;
@@ -30,10 +34,11 @@ public class AppointmentPanel extends JPanel {
     private JTable table;
     private DefaultTableModel tableModel;
 
-    public AppointmentPanel(AppointmentService appointmentService, PatientService patientService, DoctorService doctorService) {
+    public AppointmentPanel(AppointmentService appointmentService, PatientService patientService, DoctorService doctorService, UserSessionDTO session) {
         this.appointmentService = appointmentService;
         this.patientService = patientService;
         this.doctorService = doctorService;
+        this.session = session;
 
         setOpaque(false);
         setLayout(new BorderLayout(16, 16));
@@ -58,7 +63,7 @@ public class AppointmentPanel extends JPanel {
         txtTime = new JTextField(18);
         txtTime.setFont(HmsTheme.fontRegular(12));
         txtTime.setBorder(HmsTheme.roundedLineBorder(16));
-        txtTime.setToolTipText("yyyy-MM-ddTHH:mm (vd: 2026-04-02T14:30)");
+        txtTime.setToolTipText("yyyy-MM-dd HH:mm (vd: 2026-04-02 14:30)");
         JButton btnBook = new JButton("Đặt lịch");
         HmsTheme.styleSecondaryButton(btnBook);
 
@@ -115,6 +120,33 @@ public class AppointmentPanel extends JPanel {
         listTitle.setForeground(HmsTheme.TEXT);
         tableCard.add(listTitle, BorderLayout.NORTH);
         tableCard.add(new JScrollPane(table), BorderLayout.CENTER);
+        
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setOpaque(false);
+        if (session.getRole() == UserRole.RECEPTIONIST || session.getRole() == UserRole.ADMIN) {
+            JButton btnDone = new JButton("Hoàn thành (DONE)");
+            JButton btnConfirmed = new JButton("Xác nhận (CONFIRMED)");
+            JButton btnCancel = new JButton("Hủy (CANCELLED)");
+            HmsTheme.styleSecondaryButton(btnDone);
+            HmsTheme.styleSecondaryButton(btnConfirmed);
+            HmsTheme.styleSecondaryButton(btnCancel);
+            
+            btnDone.addActionListener(e -> updateStatus(Appointment.AppointmentStatus.DONE));
+            btnConfirmed.addActionListener(e -> updateStatus(Appointment.AppointmentStatus.CONFIRMED));
+            btnCancel.addActionListener(e -> updateStatus(Appointment.AppointmentStatus.CANCELLED));
+            
+            actionPanel.add(btnDone);
+            actionPanel.add(btnConfirmed);
+            actionPanel.add(btnCancel);
+            tableCard.add(actionPanel, BorderLayout.SOUTH);
+        } else if (session.getRole() == UserRole.DOCTOR) {
+            JButton btnDone = new JButton("Hoàn thành (DONE)");
+            HmsTheme.styleSecondaryButton(btnDone);
+            btnDone.addActionListener(e -> updateStatus(Appointment.AppointmentStatus.DONE));
+            actionPanel.add(btnDone);
+            tableCard.add(actionPanel, BorderLayout.SOUTH);
+        }
+        
         body.add(tableCard, BorderLayout.CENTER);
 
         add(body, BorderLayout.CENTER);
@@ -166,10 +198,11 @@ public class AppointmentPanel extends JPanel {
             try {
                 LocalDateTime time;
                 String raw = txtTime.getText() != null ? txtTime.getText().trim() : "";
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
                 if (raw.isEmpty()) {
                     time = LocalDateTime.now().plusDays(1);
                 } else {
-                    time = LocalDateTime.parse(raw);
+                    time = LocalDateTime.parse(raw, formatter);
                 }
                 appointmentService.bookAppointment(p.getId(), d.getId(), time);
                 JOptionPane.showMessageDialog(this, "Đặt lịch thành công!");
@@ -177,6 +210,23 @@ public class AppointmentPanel extends JPanel {
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
             }
+        }
+    }
+
+    private void updateStatus(Appointment.AppointmentStatus status) {
+        int row = table.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 lịch hẹn để cập nhật!");
+            return;
+        }
+        try {
+            Long currentId = Long.parseLong(tableModel.getValueAt(row, 0).toString());
+            // Chỉ cần cập nhật nếu thực sự chọn Update
+            appointmentService.updateStatus(currentId, status);
+            refreshTable();
+            JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
         }
     }
 
@@ -190,11 +240,12 @@ public class AppointmentPanel extends JPanel {
                 : appointmentService.getAppointmentsByDoctor(filterId);
 
         for (Appointment a : list) {
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
             tableModel.addRow(new Object[]{
                     a.getId(),
                     a.getPatient().getFullName(),
                     a.getDoctor().getFullName(),
-                    a.getAppointmentTime(),
+                    a.getAppointmentTime() != null ? a.getAppointmentTime().format(formatter) : "",
                     a.getStatus()
             });
         }

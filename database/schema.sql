@@ -141,6 +141,21 @@ CREATE TABLE bill_medicine_details (
         REFERENCES medicines(medicine_id)
 );
 
+CREATE TABLE accounts (
+    account_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('DOCTOR','RECEPTIONIST','PATIENT') NOT NULL,
+
+    doctor_id BIGINT,
+    patient_id BIGINT,
+
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id),
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
+);
+
 CREATE INDEX idx_appointment_patient ON appointments(patient_id);
 CREATE INDEX idx_appointment_doctor ON appointments(doctor_id);
 CREATE INDEX idx_appointment_time ON appointments(appointment_time);

@@ -20,4 +20,6 @@ public interface BillService {
      * Sums line subtotals (quantity × unit price) for all medicine lines and updates the bill.
      */
     BigDecimal calculateTotalAmount(Long billId);
+
+    void updateBillStatus(Long billId, Bill.BillStatus status);
 }
