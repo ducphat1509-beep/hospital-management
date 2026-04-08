@@ -63,7 +63,7 @@ public class AppointmentPanel extends JPanel {
         txtTime = new JTextField(18);
         txtTime.setFont(HmsTheme.fontRegular(12));
         txtTime.setBorder(HmsTheme.roundedLineBorder(16));
-        txtTime.setToolTipText("yyyy-MM-dd HH:mm (vd: 2026-04-02 14:30)");
+        txtTime.setToolTipText("yyyy-MM-dd HH:mm:ss (vd: 2026-04-02 14:30:16)");
         JButton btnBook = new JButton("Đặt lịch");
         HmsTheme.styleSecondaryButton(btnBook);
 
@@ -141,9 +141,15 @@ public class AppointmentPanel extends JPanel {
             tableCard.add(actionPanel, BorderLayout.SOUTH);
         } else if (session.getRole() == UserRole.DOCTOR) {
             JButton btnDone = new JButton("Hoàn thành (DONE)");
+            JButton btnConfirmed = new JButton("Xác nhận (CONFIRMED)");
             HmsTheme.styleSecondaryButton(btnDone);
+            HmsTheme.styleSecondaryButton(btnConfirmed);
+
             btnDone.addActionListener(e -> updateStatus(Appointment.AppointmentStatus.DONE));
+            btnConfirmed.addActionListener(e -> updateStatus(Appointment.AppointmentStatus.CONFIRMED));
+
             actionPanel.add(btnDone);
+            actionPanel.add(btnConfirmed);
             tableCard.add(actionPanel, BorderLayout.SOUTH);
         }
         
@@ -198,7 +204,7 @@ public class AppointmentPanel extends JPanel {
             try {
                 LocalDateTime time;
                 String raw = txtTime.getText() != null ? txtTime.getText().trim() : "";
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                 if (raw.isEmpty()) {
                     time = LocalDateTime.now().plusDays(1);
                 } else {
@@ -240,7 +246,7 @@ public class AppointmentPanel extends JPanel {
                 : appointmentService.getAppointmentsByDoctor(filterId);
 
         for (Appointment a : list) {
-            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             tableModel.addRow(new Object[]{
                     a.getId(),
                     a.getPatient().getFullName(),

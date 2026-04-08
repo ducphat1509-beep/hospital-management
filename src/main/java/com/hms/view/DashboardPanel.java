@@ -151,7 +151,7 @@ public class DashboardPanel extends JPanel {
         }
 
         tableCard.add(new JScrollPane(table), BorderLayout.CENTER);
-GIT
+
         body.add(tableCard, BorderLayout.CENTER);
         return body;
     }
