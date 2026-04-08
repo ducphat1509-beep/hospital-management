@@ -20,4 +20,6 @@ public interface BillMedicineDetailService {
     BigDecimal computeSubtotal(BillMedicineDetail detail);
 
     void deleteDetail(Long id);
+
+    void removeMedicineFromBill(Long billId, Long medicineId, int quantityToRemove);
 }

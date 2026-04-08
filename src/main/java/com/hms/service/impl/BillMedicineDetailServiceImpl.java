@@ -134,4 +134,19 @@ public class BillMedicineDetailServiceImpl implements BillMedicineDetailService 
         billMedicineDetailDAO.delete(id);
         billService.calculateTotalAmount(billId);
     }
+
+    @Override
+    public void removeMedicineFromBill(Long billId, Long medicineId, int quantityToRemove) {
+        BillMedicineDetail existing = billMedicineDetailDAO.findByBillAndMedicine(billId, medicineId);
+        if (existing != null) {
+            if (existing.getQuantity() <= quantityToRemove) {
+                deleteDetail(existing.getId());
+            } else {
+                existing.setQuantity(existing.getQuantity() - quantityToRemove);
+                billMedicineDetailDAO.save(existing);
+                medicineService.increaseStock(medicineId, quantityToRemove);
+                billService.calculateTotalAmount(billId);
+            }
+        }
+    }
 }

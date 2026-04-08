@@ -10,6 +10,9 @@ import com.hms.service.MedicalRecordService;
 import com.hms.service.MedicineService;
 import com.hms.service.PrescriptionDetailService;
 import com.hms.service.PrescriptionService;
+import com.hms.service.BillService;
+import com.hms.service.BillMedicineDetailService;
+import com.hms.model.entity.Bill;
 import com.hms.view.ui.HmsTheme;
 import com.hms.view.ui.RoundedPanel;
 
@@ -26,6 +29,8 @@ public class PrescriptionPanel extends JPanel {
     private final PrescriptionService prescriptionService;
     private final MedicineService medicineService;
     private final PrescriptionDetailService prescriptionDetailService;
+    private final BillService billService;
+    private final BillMedicineDetailService billMedicineDetailService;
 
     // UI Components - Record
     private final JComboBox<Appointment> cbAppointment = new JComboBox<>();
@@ -53,13 +58,17 @@ public class PrescriptionPanel extends JPanel {
             MedicalRecordService medicalRecordService,
             PrescriptionService prescriptionService,
             MedicineService medicineService,
-            PrescriptionDetailService prescriptionDetailService) {
+            PrescriptionDetailService prescriptionDetailService,
+            BillService billService,
+            BillMedicineDetailService billMedicineDetailService) {
         
         this.appointmentService = appointmentService;
         this.medicalRecordService = medicalRecordService;
         this.prescriptionService = prescriptionService;
         this.medicineService = medicineService;
         this.prescriptionDetailService = prescriptionDetailService;
+        this.billService = billService;
+        this.billMedicineDetailService = billMedicineDetailService;
 
         setOpaque(false);
         setLayout(new BorderLayout(16, 16));
@@ -336,6 +345,7 @@ public class PrescriptionPanel extends JPanel {
             int qty = Integer.parseInt(txtQuantity.getText().trim());
             String dosage = txtDosage.getText().trim();
             prescriptionDetailService.addMedicineToPrescription(currentPrescription.getId(), m.getId(), qty, dosage);
+            syncToBill(m.getId(), qty);
             txtQuantity.setText("");
             txtDosage.setText("");
             refreshTable();
@@ -357,7 +367,11 @@ public class PrescriptionPanel extends JPanel {
 
         try {
             Long detailId = Long.parseLong(tableModel.getValueAt(row, 0).toString());
+            PrescriptionDetail pd = prescriptionDetailService.getDetailById(detailId);
+            Long mId = pd.getMedicine().getId();
+            int qtyToRemove = pd.getQuantity();
             prescriptionDetailService.deleteDetail(detailId);
+            syncRemoveFromBill(mId, qtyToRemove);
             refreshTable();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage());
@@ -391,6 +405,39 @@ public class PrescriptionPanel extends JPanel {
                         String medName = d.getMedicine() != null ? d.getMedicine().getName() : "";
                         tableModel.addRow(new Object[]{d.getId(), medName, d.getQuantity(), d.getDosage()});
                    });
+        }
+    }
+
+    private Bill getOrCreateUnpaidBill(Long patientId) {
+        List<Bill> bills = billService.getAllBills();
+        for (Bill b : bills) {
+            if (b.getPatient().getId().equals(patientId) && b.getStatus() == Bill.BillStatus.UNPAID) {
+                return b;
+            }
+        }
+        return billService.createBill(patientId);
+    }
+
+    private void syncToBill(Long medicineId, int qty) {
+        if (currentRecord == null || currentRecord.getAppointment() == null) return;
+        Long patientId = currentRecord.getAppointment().getPatient().getId();
+        Bill bill = getOrCreateUnpaidBill(patientId);
+        billMedicineDetailService.addMedicineToBill(bill.getId(), medicineId, qty);
+    }
+
+    private void syncRemoveFromBill(Long medicineId, int qtyToRemove) {
+        if (currentRecord == null || currentRecord.getAppointment() == null) return;
+        Long patientId = currentRecord.getAppointment().getPatient().getId();
+        List<Bill> bills = billService.getAllBills();
+        Bill bill = null;
+        for (Bill b : bills) {
+            if (b.getPatient().getId().equals(patientId) && b.getStatus() == Bill.BillStatus.UNPAID) {
+                bill = b;
+                break;
+            }
+        }
+        if (bill != null) {
+            billMedicineDetailService.removeMedicineFromBill(bill.getId(), medicineId, qtyToRemove);
         }
     }
 }

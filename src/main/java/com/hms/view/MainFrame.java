@@ -113,7 +113,7 @@ public class MainFrame extends JFrame {
         DoctorPanel doctorPanel = new DoctorPanel(doctorService);
         AppointmentPanel appointmentPanel = new AppointmentPanel(appointmentService, patientService, doctorService, currentUser);
         MedicinePanel medicinePanel = new MedicinePanel(medicineService);
-        PrescriptionPanel prescriptionPanel = new PrescriptionPanel(appointmentService, medicalRecordService, prescriptionService, medicineService, prescriptionDetailService);
+        PrescriptionPanel prescriptionPanel = new PrescriptionPanel(appointmentService, medicalRecordService, prescriptionService, medicineService, prescriptionDetailService, billService, billMedicineDetailService);
         BillPanel billPanel = new BillPanel(billService, billMedicineDetailService, medicineService, patientService, currentUser);
 
         content.add(dashboardPanel, Nav.DASHBOARD);
@@ -175,12 +175,11 @@ public class MainFrame extends JFrame {
 
         if (role == UserRole.ADMIN || role == UserRole.RECEPTIONIST) {
             nav.add(HmsTheme.navButton("Bệnh nhân", Nav.PATIENTS));
+            nav.add(HmsTheme.navButton("Hóa đơn", Nav.BILLS));
         }
 
         if (role == UserRole.ADMIN || role == UserRole.DOCTOR) {
             nav.add(HmsTheme.navButton("Đơn thuốc", Nav.PRESCRIPTIONS));
-            nav.add(HmsTheme.navButton("Hóa đơn", Nav.BILLS));
-
         }
 
         if (role == UserRole.ADMIN) {
